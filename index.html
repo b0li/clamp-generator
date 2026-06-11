@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Clamp Generator</title>
+
+	<style>
+
+		*, *::before, *::after {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		:root {
+			--bg: #1a1d23;
+			--surface: #22262e;
+			--surface-2: #2a2f39;
+			--border: #333844;
+			--accent: #d4a55a;
+			--accent-dim: rgba( 212, 165, 90, 0.15 );
+			--green: #6abf69;
+			--red: #e06c6c;
+			--text: #e8eaf0;
+			--text-dim: #8a909e;
+			--radius: 10px;
+		}
+
+		body {
+			background: var( --bg );
+			color: var( --text );
+			font-family: 'DM Sans', system-ui, sans-serif;
+			min-height: 100vh;
+			padding: 32px 16px 64px;
+		}
+
+		.wrap {
+			max-width: 860px;
+			margin: 0 auto;
+		}
+
+		h1 {
+			font-family: 'DM Serif Display', Georgia, serif;
+			font-size: 2rem;
+			font-weight: 400;
+			color: var( --accent );
+			text-align: center;
+			margin-bottom: 8px;
+		}
+
+		.subtitle {
+			text-align: center;
+			color: var( --text-dim );
+			font-size: 0.9rem;
+			margin-bottom: 32px;
+		}
+
+		/* Surface card */
+
+		.controls {
+			background: var( --surface );
+			border: 1px solid var( --border );
+			border-radius: var( --radius );
+			padding: 18px 20px;
+			margin-bottom: 16px;
+		}
+
+		.controls__head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			margin-bottom: 14px;
+			flex-wrap: wrap;
+		}
+
+		.controls__title {
+			font-size: 0.9rem;
+			font-weight: 700;
+			color: var( --text );
+		}
+
+		/* Field grid */
+
+		.field-grid {
+			display: flex;
+			gap: 16px;
+			flex-wrap: wrap;
+			align-items: flex-end;
+		}
+
+		.field {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.field--grow {
+			flex: 1;
+			min-width: 120px;
+		}
+
+		.field label {
+			font-size: 0.78rem;
+			color: var( --text-dim );
+		}
+
+		input[type="number"],
+		input[type="text"] {
+			background: var( --surface-2 );
+			border: 1px solid var( --border );
+			border-radius: 6px;
+			color: var( --text );
+			font-family: inherit;
+			font-size: 0.9rem;
+			padding: 7px 10px;
+			outline: none;
+			-moz-appearance: textfield;
+			width: 110px;
+		}
+
+		input[type="number"]::-webkit-outer-spin-button,
+		input[type="number"]::-webkit-inner-spin-button {
+			-webkit-appearance: none;
+		}
+
+		input[type="number"]:focus,
+		input[type="text"]:focus {
+			border-color: var( --accent );
+		}
+
+		select {
+			background: var( --surface-2 );
+			border: 1px solid var( --border );
+			border-radius: 6px;
+			color: var( --text );
+			font-family: inherit;
+			font-size: 0.9rem;
+			padding: 7px 10px;
+			outline: none;
+			cursor: pointer;
+		}
+
+		select:focus {
+			border-color: var( --accent );
+		}
+
+		/* Segmented toggle */
+
+		.toggle {
+			display: inline-flex;
+			background: var( --surface-2 );
+			border: 1px solid var( --border );
+			border-radius: 6px;
+			padding: 2px;
+			gap: 2px;
+		}
+
+		.toggle button {
+			background: transparent;
+			border: none;
+			color: var( --text-dim );
+			font-family: inherit;
+			font-size: 0.78rem;
+			font-weight: 600;
+			padding: 5px 12px;
+			border-radius: 4px;
+			cursor: pointer;
+			transition: background 0.15s, color 0.15s;
+		}
+
+		.toggle button.is-active {
+			background: var( --accent );
+			color: #1a1d23;
+		}
+
+		/* Tabs */
+
+		.tabs {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+			margin-bottom: 16px;
+		}
+
+		.tab {
+			background: var( --surface-2 );
+			border: 1px solid var( --border );
+			color: var( --text-dim );
+			font-family: inherit;
+			font-size: 0.85rem;
+			font-weight: 600;
+			padding: 8px 16px;
+			border-radius: 6px;
+			cursor: pointer;
+			transition: border-color 0.15s, color 0.15s;
+		}
+
+		.tab.is-active {
+			border-color: var( --accent );
+			color: var( --accent );
+		}
+
+		/* Panels */
+
+		.panel {
+			display: none;
+		}
+
+		.panel.is-active {
+			display: block;
+		}
+
+		/* Spacing sides */
+
+		.sides {
+			display: grid;
+			grid-template-columns: repeat( auto-fit, minmax( 180px, 1fr ) );
+			gap: 14px;
+			margin-top: 14px;
+		}
+
+		.side {
+			background: var( --surface-2 );
+			border: 1px solid var( --border );
+			border-radius: 8px;
+			padding: 12px 14px;
+		}
+
+		.side__label {
+			display: block;
+			font-size: 0.78rem;
+			font-weight: 700;
+			color: var( --accent );
+			margin-bottom: 8px;
+		}
+
+		.side__inputs {
+			display: flex;
+			gap: 8px;
+		}
+
+		.side__inputs input {
+			width: 100%;
+		}
+
+		.side.is-hidden {
+			display: none;
+		}
+
+		/* Output */
+
+		.outputs {
+			margin-top: 16px;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.output-row {
+			display: flex;
+			align-items: stretch;
+			gap: 8px;
+		}
+
+		.output-row input,
+		.output-row textarea {
+			flex: 1;
+			width: auto;
+			font-family: 'SF Mono', Menlo, Consolas, monospace;
+			font-size: 0.85rem;
+			background: var( --surface );
+			resize: none;
+		}
+
+		.output-row textarea {
+			min-height: 92px;
+			line-height: 1.5;
+			padding: 10px;
+		}
+
+		.copy {
+			background: var( --surface-2 );
+			border: 1px solid var( --border );
+			color: var( --text-dim );
+			border-radius: 6px;
+			padding: 0 14px;
+			font-size: 1rem;
+			cursor: pointer;
+			transition: color 0.15s, border-color 0.15s;
+			min-width: 46px;
+		}
+
+		.copy:hover {
+			color: var( --accent );
+			border-color: var( --accent );
+		}
+
+		.copy.is-copied {
+			color: var( --green );
+			border-color: var( --green );
+		}
+
+		.hint {
+			margin-top: 12px;
+			font-size: 0.82rem;
+			color: var( --text-dim );
+		}
+
+		.hint b {
+			color: var( --accent );
+			font-weight: 600;
+		}
+
+		/* Preview */
+
+		.preview-wrap {
+			margin-top: 20px;
+		}
+
+		.preview-label {
+			font-size: 0.78rem;
+			color: var( --text-dim );
+			margin-bottom: 8px;
+		}
+
+		.preview-box {
+			background: var( --surface );
+			border: 1px solid var( --border );
+			border-radius: var( --radius );
+			padding: 24px;
+			overflow: hidden;
+		}
+
+		.preview-text {
+			color: var( --text );
+			font-weight: 700;
+			line-height: 1.2;
+		}
+
+		.preview-track {
+			background: repeating-linear-gradient( 45deg, var( --surface-2 ), var( --surface-2 ) 10px, var( --surface ) 10px, var( --surface ) 20px );
+			border: 1px dashed var( --border );
+			border-radius: 8px;
+		}
+
+		.preview-demo {
+			background: var( --accent-dim );
+			border: 1px solid var( --accent );
+			border-radius: 6px;
+			color: var( --accent );
+			font-weight: 600;
+			font-size: 0.85rem;
+			text-align: center;
+		}
+
+		.preview-flex {
+			display: flex;
+			flex-wrap: wrap;
+		}
+
+		.preview-flex span {
+			flex: 1;
+			min-width: 60px;
+			background: var( --accent-dim );
+			border: 1px solid var( --accent );
+			border-radius: 6px;
+			padding: 16px 0;
+			text-align: center;
+			color: var( --accent );
+			font-size: 0.8rem;
+			font-weight: 600;
+		}
+
+		.preview-bar {
+			height: 40px;
+			background: var( --accent );
+			border-radius: 6px;
+			max-width: 100%;
+		}
+
+		.preview-radius {
+			height: 90px;
+			background: var( --accent-dim );
+			border: 1px solid var( --accent );
+		}
+
+		/* Use-case hints */
+
+		.usecases {
+			margin-top: 32px;
+			background: var( --surface );
+			border: 1px solid var( --border );
+			border-radius: var( --radius );
+			padding: 18px 22px;
+		}
+
+		.usecases h2 {
+			font-family: 'DM Serif Display', Georgia, serif;
+			font-size: 1.2rem;
+			font-weight: 400;
+			color: var( --accent );
+			margin-bottom: 10px;
+		}
+
+		.usecases ul {
+			list-style: none;
+			display: grid;
+			grid-template-columns: repeat( auto-fit, minmax( 220px, 1fr ) );
+			gap: 8px 20px;
+		}
+
+		.usecases li {
+			font-size: 0.85rem;
+			color: var( --text-dim );
+			padding-left: 16px;
+			position: relative;
+		}
+
+		.usecases li::before {
+			content: '→';
+			position: absolute;
+			left: 0;
+			color: var( --accent );
+		}
+
+		.usecases code {
+			font-family: 'SF Mono', Menlo, Consolas, monospace;
+			color: var( --text );
+			font-size: 0.8rem;
+		}
+
+		/* Google Fonts */
+
+		@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;600;700&display=swap');
+
+	</style>
+
+</head>
+<body>
+
+	<div class="wrap">
+
+		<h1>Clamp Generator</h1>
+		<p class="subtitle">Responsive CSS-Werte mit <code>clamp()</code> – Schriftgröße, Padding/Margin, Gap, Breite &amp; mehr</p>
+
+		<!-- Shared viewport range -->
+
+		<div class="controls">
+
+			<div class="controls__head">
+				<span class="controls__title">Viewport-Range</span>
+				<div class="toggle" id="vwUnit" data-value="px">
+					<button class="is-active" data-value="px">PX</button>
+					<button data-value="rem">REM</button>
+				</div>
+			</div>
+
+			<div class="field-grid">
+
+				<div class="field">
+					<label for="minVw">Min. Viewport</label>
+					<input type="number" id="minVw" value="576" min="0">
+				</div>
+
+				<div class="field">
+					<label for="maxVw">Max. Viewport</label>
+					<input type="number" id="maxVw" value="1400" min="0">
+				</div>
+
+				<div class="field">
+					<label for="base">Base (px)</label>
+					<input type="number" id="base" value="16" min="1">
+				</div>
+
+			</div><!-- end /.field-grid -->
+
+		</div><!-- end /.controls (viewport) -->
+
+		<!-- Tabs -->
+
+		<div class="tabs" role="tablist">
+			<button class="tab is-active" data-tab="fontSize">Schriftgröße</button>
+			<button class="tab" data-tab="spacing">Spacing</button>
+			<button class="tab" data-tab="gap">Gap</button>
+			<button class="tab" data-tab="width">Breite</button>
+			<button class="tab" data-tab="size">Höhe &amp; Radius</button>
+		</div><!-- end /.tabs -->
+
+		<!-- Panel: Font Size -->
+
+		<div class="panel is-active" data-tab="fontSize" data-type="single" data-prop="font-size" data-preview-prop="font-size">
+
+			<div class="controls">
+				<div class="field-grid">
+
+					<div class="field">
+						<label>Min. Schriftgröße</label>
+						<input type="number" class="f-min" value="1" step="0.05">
+					</div>
+
+					<div class="field">
+						<label>Max. Schriftgröße</label>
+						<input type="number" class="f-max" value="2" step="0.05">
+					</div>
+
+					<div class="field">
+						<label>Einheit</label>
+						<div class="toggle size-unit" data-value="rem">
+							<button data-value="px">PX</button>
+							<button class="is-active" data-value="rem">REM</button>
+						</div>
+					</div>
+
+				</div><!-- end /.field-grid -->
+
+				<div class="outputs">
+					<div class="output-row">
+						<input type="text" class="out-value" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+					<div class="output-row">
+						<input type="text" class="out-prop" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+				</div><!-- end /.outputs -->
+
+				<p class="hint"></p>
+
+			</div><!-- end /.controls -->
+
+			<div class="preview-wrap">
+				<div class="preview-label">Live-Preview (Fenster skalieren)</div>
+				<div class="preview-box">
+					<div class="preview-text preview">Dieser Text skaliert flüssig mit der Viewport-Breite.</div>
+				</div>
+			</div>
+
+		</div><!-- end /.panel fontSize -->
+
+		<!-- Panel: Spacing -->
+
+		<div class="panel" data-tab="spacing" data-type="spacing" data-preview-prop="padding">
+
+			<div class="controls">
+
+				<div class="controls__head">
+					<div class="field-grid">
+						<div class="field">
+							<label>Eigenschaft</label>
+							<select class="prop-select">
+								<option value="padding">padding</option>
+								<option value="margin">margin</option>
+							</select>
+						</div>
+						<div class="field">
+							<label>Einheit</label>
+							<div class="toggle size-unit" data-value="rem">
+								<button data-value="px">PX</button>
+								<button class="is-active" data-value="rem">REM</button>
+							</div>
+						</div>
+						<div class="field">
+							<label>Seiten</label>
+							<div class="toggle link-mode" data-value="linked">
+								<button class="is-active" data-value="linked">Alle gleich</button>
+								<button data-value="single">Einzeln</button>
+							</div>
+						</div>
+					</div>
+				</div><!-- end /.controls__head -->
+
+				<div class="sides">
+
+					<div class="side" data-side="top">
+						<span class="side__label">Top</span>
+						<div class="side__inputs">
+							<input type="number" class="s-min" value="1" step="0.05" placeholder="min">
+							<input type="number" class="s-max" value="4" step="0.05" placeholder="max">
+						</div>
+					</div>
+
+					<div class="side" data-side="right">
+						<span class="side__label">Right</span>
+						<div class="side__inputs">
+							<input type="number" class="s-min" value="1" step="0.05" placeholder="min">
+							<input type="number" class="s-max" value="4" step="0.05" placeholder="max">
+						</div>
+					</div>
+
+					<div class="side" data-side="bottom">
+						<span class="side__label">Bottom</span>
+						<div class="side__inputs">
+							<input type="number" class="s-min" value="1" step="0.05" placeholder="min">
+							<input type="number" class="s-max" value="4" step="0.05" placeholder="max">
+						</div>
+					</div>
+
+					<div class="side" data-side="left">
+						<span class="side__label">Left</span>
+						<div class="side__inputs">
+							<input type="number" class="s-min" value="1" step="0.05" placeholder="min">
+							<input type="number" class="s-max" value="4" step="0.05" placeholder="max">
+						</div>
+					</div>
+
+				</div><!-- end /.sides -->
+
+				<div class="outputs">
+					<div class="output-row">
+						<input type="text" class="out-value" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+					<div class="output-row">
+						<textarea class="out-individual" readonly></textarea>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+				</div><!-- end /.outputs -->
+
+				<p class="hint"></p>
+
+			</div><!-- end /.controls -->
+
+			<div class="preview-wrap">
+				<div class="preview-label">Live-Preview (Fenster skalieren)</div>
+				<div class="preview-box preview-track">
+					<div class="preview-demo preview">Box</div>
+				</div>
+			</div>
+
+		</div><!-- end /.panel spacing -->
+
+		<!-- Panel: Gap -->
+
+		<div class="panel" data-tab="gap" data-type="single" data-prop="gap" data-preview-prop="gap">
+
+			<div class="controls">
+				<div class="field-grid">
+
+					<div class="field">
+						<label>Min. Gap</label>
+						<input type="number" class="f-min" value="1" step="0.05">
+					</div>
+
+					<div class="field">
+						<label>Max. Gap</label>
+						<input type="number" class="f-max" value="3" step="0.05">
+					</div>
+
+					<div class="field">
+						<label>Einheit</label>
+						<div class="toggle size-unit" data-value="rem">
+							<button data-value="px">PX</button>
+							<button class="is-active" data-value="rem">REM</button>
+						</div>
+					</div>
+
+				</div><!-- end /.field-grid -->
+
+				<div class="outputs">
+					<div class="output-row">
+						<input type="text" class="out-value" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+					<div class="output-row">
+						<input type="text" class="out-prop" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+				</div><!-- end /.outputs -->
+
+				<p class="hint"></p>
+
+			</div><!-- end /.controls -->
+
+			<div class="preview-wrap">
+				<div class="preview-label">Live-Preview (Fenster skalieren)</div>
+				<div class="preview-box">
+					<div class="preview-flex preview">
+						<span>1</span><span>2</span><span>3</span><span>4</span>
+					</div>
+				</div>
+			</div>
+
+		</div><!-- end /.panel gap -->
+
+		<!-- Panel: Width -->
+
+		<div class="panel" data-tab="width" data-type="single" data-preview-prop="width">
+
+			<div class="controls">
+				<div class="field-grid">
+
+					<div class="field">
+						<label>Eigenschaft</label>
+						<select class="prop-select">
+							<option value="width">width</option>
+							<option value="max-width">max-width</option>
+						</select>
+					</div>
+
+					<div class="field">
+						<label>Min. Breite</label>
+						<input type="number" class="f-min" value="20" step="1">
+					</div>
+
+					<div class="field">
+						<label>Max. Breite</label>
+						<input type="number" class="f-max" value="50" step="1">
+					</div>
+
+					<div class="field">
+						<label>Einheit</label>
+						<div class="toggle size-unit" data-value="rem">
+							<button data-value="px">PX</button>
+							<button class="is-active" data-value="rem">REM</button>
+						</div>
+					</div>
+
+				</div><!-- end /.field-grid -->
+
+				<div class="outputs">
+					<div class="output-row">
+						<input type="text" class="out-value" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+					<div class="output-row">
+						<input type="text" class="out-prop" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+				</div><!-- end /.outputs -->
+
+				<p class="hint"></p>
+
+			</div><!-- end /.controls -->
+
+			<div class="preview-wrap">
+				<div class="preview-label">Live-Preview (Fenster skalieren)</div>
+				<div class="preview-box">
+					<div class="preview-bar preview"></div>
+				</div>
+			</div>
+
+		</div><!-- end /.panel width -->
+
+		<!-- Panel: Height & Radius -->
+
+		<div class="panel" data-tab="size" data-type="single" data-preview-prop="min-height">
+
+			<div class="controls">
+				<div class="field-grid">
+
+					<div class="field">
+						<label>Eigenschaft</label>
+						<select class="prop-select">
+							<option value="min-height">min-height</option>
+							<option value="border-radius">border-radius</option>
+						</select>
+					</div>
+
+					<div class="field">
+						<label>Min. Wert</label>
+						<input type="number" class="f-min" value="2" step="0.5">
+					</div>
+
+					<div class="field">
+						<label>Max. Wert</label>
+						<input type="number" class="f-max" value="6" step="0.5">
+					</div>
+
+					<div class="field">
+						<label>Einheit</label>
+						<div class="toggle size-unit" data-value="rem">
+							<button data-value="px">PX</button>
+							<button class="is-active" data-value="rem">REM</button>
+						</div>
+					</div>
+
+				</div><!-- end /.field-grid -->
+
+				<div class="outputs">
+					<div class="output-row">
+						<input type="text" class="out-value" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+					<div class="output-row">
+						<input type="text" class="out-prop" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+				</div><!-- end /.outputs -->
+
+				<p class="hint"></p>
+
+			</div><!-- end /.controls -->
+
+			<div class="preview-wrap">
+				<div class="preview-label">Live-Preview (Fenster skalieren)</div>
+				<div class="preview-box">
+					<div class="preview-radius preview"></div>
+				</div>
+			</div>
+
+		</div><!-- end /.panel size -->
+
+		<!-- Use cases -->
+
+		<div class="usecases">
+			<h2>Wofür sich clamp() noch lohnt</h2>
+			<ul>
+				<li>Fluide <code>padding</code>/<code>margin</code> für Section-Abstände</li>
+				<li><code>gap</code> in Grid/Flex-Layouts</li>
+				<li>Container-<code>width</code>/<code>max-width</code> ohne Media-Queries</li>
+				<li><code>min-height</code> für Hero-Sections</li>
+				<li><code>border-radius</code>, der mitskaliert</li>
+				<li><code>line-height</code> &amp; <code>letter-spacing</code></li>
+				<li><code>gap</code> via <code>minmax()</code> in <code>grid-template-columns</code></li>
+				<li>Sticky-Offsets (<code>top</code>/<code>left</code>)</li>
+			</ul>
+		</div><!-- end /.usecases -->
+
+	</div><!-- end /.wrap -->
+
+	<script>
+
+		(function() {
+
+			'use strict';
+
+			const minVwInput = document.getElementById( 'minVw' );
+			const maxVwInput = document.getElementById( 'maxVw' );
+			const baseInput = document.getElementById( 'base' );
+			const vwToggle = document.getElementById( 'vwUnit' );
+
+			const tabs = document.querySelectorAll( '.tab' );
+			const panels = document.querySelectorAll( '.panel' );
+
+			// Round to 4 decimals, strip trailing zeros
+
+			function round( n ) {
+				return parseFloat( n.toFixed( 4 ) );
+			}
+
+			// Convert any value to rem
+
+			function toRem( val, unit, base ) {
+				return unit === 'px' ? val / base : val;
+			}
+
+			// Core: build a clamp() string from rem values
+
+			function buildClamp( minRem, maxRem, minVwRem, maxVwRem ) {
+
+				// Auto-swap if min > max
+				if ( minRem > maxRem ) {
+					const t = minRem;
+					minRem = maxRem;
+					maxRem = t;
+				}
+
+				// Equal viewports → no fluid part, return static max
+				if ( minVwRem === maxVwRem ) {
+					return `${ round( maxRem ) }rem`;
+				}
+
+				const slope = ( maxRem - minRem ) / ( maxVwRem - minVwRem );
+				const vwPart = round( slope * 100 );
+				const intersection = round( minRem - slope * minVwRem );
+
+				const sign = vwPart < 0 ? '-' : '+';
+
+				return `clamp(${ round( minRem ) }rem, ${ intersection }rem ${ sign } ${ Math.abs( vwPart ) }vw, ${ round( maxRem ) }rem)`;
+
+			}
+
+			// Read shared viewport range
+
+			function getViewport( base ) {
+
+				const unit = vwToggle.dataset.value;
+				const minRaw = parseFloat( minVwInput.value );
+				const maxRaw = parseFloat( maxVwInput.value );
+
+				return {
+					minRem: toRem( minRaw, unit, base ),
+					maxRem: toRem( maxRaw, unit, base ),
+					minRaw: minRaw,
+					maxRaw: maxRaw,
+					unit: unit
+				};
+
+			}
+
+			// Apply generated value to the panel's live preview
+
+			function applyPreview( panel, value ) {
+
+				const preview = panel.querySelector( '.preview' );
+				if ( ! preview ) return;
+
+				const cssProp = panel.dataset.previewProp;
+				preview.style.setProperty( cssProp, value );
+
+			}
+
+			// Recompute a single-value panel (font-size, gap, width, height/radius)
+
+			function recomputeSingle( panel, base, vw ) {
+
+				const unit = panel.querySelector( '.size-unit' ).dataset.value;
+				const minVal = parseFloat( panel.querySelector( '.f-min' ).value );
+				const maxVal = parseFloat( panel.querySelector( '.f-max' ).value );
+
+				const outValue = panel.querySelector( '.out-value' );
+				const outProp = panel.querySelector( '.out-prop' );
+				const hint = panel.querySelector( '.hint' );
+
+				const select = panel.querySelector( '.prop-select' );
+				const prop = select ? select.value : panel.dataset.prop;
+
+				// Preview property follows the selected property
+				if ( select ) panel.dataset.previewProp = prop;
+
+				if ( isNaN( minVal ) || isNaN( maxVal ) || isNaN( vw.minRem ) || isNaN( vw.maxRem ) ) {
+					outValue.value = '';
+					outProp.value = '';
+					hint.innerHTML = '';
+					return;
+				}
+
+				const minRem = toRem( minVal, unit, base );
+				const maxRem = toRem( maxVal, unit, base );
+
+				const clamp = buildClamp( minRem, maxRem, vw.minRem, vw.maxRem );
+
+				outValue.value = clamp;
+				outProp.value = `${ prop }: ${ clamp };`;
+
+				hint.innerHTML = `Skaliert von <b>${ minVal }${ unit }</b> bei <b>${ vw.minRaw }${ vw.unit }</b> bis <b>${ maxVal }${ unit }</b> bei <b>${ vw.maxRaw }${ vw.unit }</b>.`;
+
+				applyPreview( panel, clamp );
+
+			}
+
+			// Recompute the spacing panel (padding/margin, 4 sides)
+
+			function recomputeSpacing( panel, base, vw ) {
+
+				const unit = panel.querySelector( '.size-unit' ).dataset.value;
+				const prop = panel.querySelector( '.prop-select' ).value;
+				const linked = panel.querySelector( '.link-mode' ).dataset.value === 'linked';
+
+				panel.dataset.previewProp = prop;
+
+				const order = [ 'top', 'right', 'bottom', 'left' ];
+				const topSide = panel.querySelector( '.side[data-side="top"]' );
+
+				// Toggle visibility of non-top sides when linked
+				panel.querySelectorAll( '.side' ).forEach( side => {
+					if ( side.dataset.side === 'top' ) return;
+					side.classList.toggle( 'is-hidden', linked );
+				});
+
+				const outValue = panel.querySelector( '.out-value' );
+				const outIndividual = panel.querySelector( '.out-individual' );
+				const hint = panel.querySelector( '.hint' );
+
+				const clamps = [];
+				let valid = true;
+
+				order.forEach( name => {
+
+					const source = linked ? topSide : panel.querySelector( `.side[data-side="${ name }"]` );
+					const minVal = parseFloat( source.querySelector( '.s-min' ).value );
+					const maxVal = parseFloat( source.querySelector( '.s-max' ).value );
+
+					if ( isNaN( minVal ) || isNaN( maxVal ) ) {
+						valid = false;
+						return;
+					}
+
+					const minRem = toRem( minVal, unit, base );
+					const maxRem = toRem( maxVal, unit, base );
+
+					clamps.push( buildClamp( minRem, maxRem, vw.minRem, vw.maxRem ) );
+
+				});
+
+				if ( ! valid || isNaN( vw.minRem ) || isNaN( vw.maxRem ) ) {
+					outValue.value = '';
+					outIndividual.value = '';
+					hint.innerHTML = '';
+					return;
+				}
+
+				// Shorthand: top right bottom left
+				outValue.value = `${ prop }: ${ clamps.join( ' ' ) };`;
+
+				// Individual properties
+				outIndividual.value = order
+					.map( ( name, i ) => `${ prop }-${ name }: ${ clamps[i] };` )
+					.join( '\n' );
+
+				hint.innerHTML = linked
+					? `Alle Seiten gleich. Skaliert zwischen <b>${ vw.minRaw }${ vw.unit }</b> und <b>${ vw.maxRaw }${ vw.unit }</b>.`
+					: `Pro Seite eigener clamp. Skaliert zwischen <b>${ vw.minRaw }${ vw.unit }</b> und <b>${ vw.maxRaw }${ vw.unit }</b>.`;
+
+				applyPreview( panel, clamps.join( ' ' ) );
+
+			}
+
+			// Recompute every panel
+
+			function recomputeAll() {
+
+				const base = parseFloat( baseInput.value ) || 16;
+				const vw = getViewport( base );
+
+				panels.forEach( panel => {
+					if ( panel.dataset.type === 'spacing' ) {
+						recomputeSpacing( panel, base, vw );
+					} else {
+						recomputeSingle( panel, base, vw );
+					}
+				});
+
+			}
+
+			// Tab switching
+
+			tabs.forEach( tab => {
+
+				tab.addEventListener( 'click', () => {
+
+					tabs.forEach( t => t.classList.remove( 'is-active' ) );
+					tab.classList.add( 'is-active' );
+
+					panels.forEach( panel => {
+						panel.classList.toggle( 'is-active', panel.dataset.tab === tab.dataset.tab );
+					});
+
+				});
+
+			});
+
+			// Segmented toggles
+
+			document.querySelectorAll( '.toggle' ).forEach( toggle => {
+
+				toggle.querySelectorAll( 'button' ).forEach( btn => {
+
+					btn.addEventListener( 'click', () => {
+
+						toggle.querySelectorAll( 'button' ).forEach( b => b.classList.remove( 'is-active' ) );
+						btn.classList.add( 'is-active' );
+						toggle.dataset.value = btn.dataset.value;
+
+						recomputeAll();
+
+					});
+
+				});
+
+			});
+
+			// Live recompute on any input/select change
+
+			document.querySelectorAll( 'input, select' ).forEach( el => {
+				el.addEventListener( 'input', recomputeAll );
+			});
+
+			// Copy buttons
+
+			document.querySelectorAll( '.copy' ).forEach( btn => {
+
+				btn.addEventListener( 'click', () => {
+
+					const field = btn.closest( '.output-row' ).querySelector( 'input, textarea' );
+					if ( ! field || ! field.value ) return;
+
+					navigator.clipboard.writeText( field.value ).then( () => {
+
+						const original = btn.textContent;
+						btn.textContent = '✓';
+						btn.classList.add( 'is-copied' );
+
+						setTimeout( () => {
+							btn.textContent = original;
+							btn.classList.remove( 'is-copied' );
+						}, 1200 );
+
+					});
+
+				});
+
+			});
+
+			recomputeAll();
+
+		})();
+
+	</script>
+
+</body>
+</html>
