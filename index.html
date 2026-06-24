@@ -272,8 +272,19 @@
 			width: auto;
 			font-family: 'SF Mono', Menlo, Consolas, monospace;
 			font-size: 0.85rem;
+			color: var( --text );
 			background: var( --surface );
 			resize: none;
+		}
+
+		.output-row textarea {
+			border: 1px solid var( --border );
+			border-radius: 6px;
+			outline: none;
+		}
+
+		.output-row textarea:focus {
+			border-color: var( --accent );
 		}
 
 		.output-row textarea {
