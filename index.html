@@ -452,9 +452,21 @@
 
 			<div class="controls__head">
 				<span class="controls__title">Viewport-Range</span>
-				<div class="toggle" id="vwUnit" data-value="px">
-					<button class="is-active" data-value="px">PX</button>
-					<button data-value="rem">REM</button>
+				<div class="field-grid">
+					<div class="field">
+						<label>Viewport-Einheit</label>
+						<div class="toggle" id="vwUnit" data-value="px">
+							<button class="is-active" data-value="px">PX</button>
+							<button data-value="rem">REM</button>
+						</div>
+					</div>
+					<div class="field">
+						<label>Output</label>
+						<div class="toggle" id="outMode" data-value="css">
+							<button class="is-active" data-value="css">CSS</button>
+							<button data-value="scss">SCSS</button>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -831,6 +843,7 @@
 			const maxVwInput = document.getElementById( 'maxVw' );
 			const baseInput = document.getElementById( 'base' );
 			const vwToggle = document.getElementById( 'vwUnit' );
+			const outModeToggle = document.getElementById( 'outMode' );
 
 			const tabs = document.querySelectorAll( '.tab' );
 			const panels = document.querySelectorAll( '.panel' );
@@ -869,7 +882,12 @@
 
 				const sign = vwPart < 0 ? '-' : '+';
 
-				return `clamp(${ round( minRem ) }rem, ${ intersection }rem ${ sign } ${ Math.abs( vwPart ) }vw, ${ round( maxRem ) }rem)`;
+				// SCSS compilers evaluate "rem + vw" at compile time and fail on
+				// incompatible units, so wrap the fluid term in calc() (valid CSS too)
+				const preferred = `${ intersection }rem ${ sign } ${ Math.abs( vwPart ) }vw`;
+				const middle = outModeToggle.dataset.value === 'scss' ? `calc(${ preferred })` : preferred;
+
+				return `clamp(${ round( minRem ) }rem, ${ middle }, ${ round( maxRem ) }rem)`;
 
 			}
 
