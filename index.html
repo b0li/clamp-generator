@@ -246,7 +246,8 @@
 			width: 100%;
 		}
 
-		.side.is-hidden {
+		.side.is-hidden,
+		.field.is-hidden {
 			display: none;
 		}
 
@@ -499,6 +500,7 @@
 			<button class="tab" data-tab="gap">Gap</button>
 			<button class="tab" data-tab="width">Breite</button>
 			<button class="tab" data-tab="size">Höhe &amp; Radius</button>
+			<button class="tab" data-tab="lineHeight">Zeilenhöhe</button>
 		</div><!-- end /.tabs -->
 
 		<!-- Panel: Font Size -->
@@ -815,6 +817,58 @@
 
 		</div><!-- end /.panel size -->
 
+		<!-- Panel: Line Height -->
+
+		<div class="panel" data-tab="lineHeight" data-type="lineHeight" data-preview-prop="line-height">
+
+			<div class="controls">
+				<div class="field-grid">
+
+					<div class="field">
+						<label>Einheit</label>
+						<div class="toggle lh-unit" data-value="unitless">
+							<button class="is-active" data-value="unitless">einheitslos</button>
+							<button data-value="px">PX</button>
+							<button data-value="%">%</button>
+						</div>
+					</div>
+
+					<div class="field">
+						<label class="lh-min-label">Wert</label>
+						<input type="number" class="f-min" value="1.4" step="0.05">
+					</div>
+
+					<div class="field lh-max-field is-hidden">
+						<label>Max. Wert</label>
+						<input type="number" class="f-max" value="1.6" step="0.05">
+					</div>
+
+				</div><!-- end /.field-grid -->
+
+				<div class="outputs">
+					<div class="output-row">
+						<input type="text" class="out-value" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+					<div class="output-row">
+						<input type="text" class="out-prop" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+				</div><!-- end /.outputs -->
+
+				<p class="hint"></p>
+
+			</div><!-- end /.controls -->
+
+			<div class="preview-wrap">
+				<div class="preview-label">Live-Preview (Fenster skalieren)</div>
+				<div class="preview-box">
+					<p class="preview-text preview" style="font-size:1.1rem;font-weight:400">Diese Zeilen zeigen die Zeilenhöhe.<br>Bei mehreren Zeilen wird der vertikale Abstand sichtbar.<br>So lässt sich die Wirkung der line-height direkt beurteilen.</p>
+				</div>
+			</div>
+
+		</div><!-- end /.panel lineHeight -->
+
 		<!-- Use cases -->
 
 		<div class="usecases">
@@ -891,6 +945,35 @@
 
 			}
 
+			// Clamp builder that keeps the native unit (px, %) instead of rem.
+			// Viewport bounds come in as px. Used for line-height where rem
+			// conversion makes no sense (% is font-size-relative, px stays px).
+
+			function buildClampNative( minVal, maxVal, unit, minVwPx, maxVwPx ) {
+
+				if ( minVal > maxVal ) {
+					const t = minVal;
+					minVal = maxVal;
+					maxVal = t;
+				}
+
+				if ( minVwPx === maxVwPx ) {
+					return `${ round( maxVal ) }${ unit }`;
+				}
+
+				const slope = ( maxVal - minVal ) / ( maxVwPx - minVwPx );
+				const vwPart = round( slope * 100 );
+				const intersection = round( minVal - slope * minVwPx );
+
+				const sign = vwPart < 0 ? '-' : '+';
+
+				const preferred = `${ intersection }${ unit } ${ sign } ${ Math.abs( vwPart ) }vw`;
+				const middle = outModeToggle.dataset.value === 'scss' ? `calc(${ preferred })` : preferred;
+
+				return `clamp(${ round( minVal ) }${ unit }, ${ middle }, ${ round( maxVal ) }${ unit })`;
+
+			}
+
 			// Read shared viewport range
 
 			function getViewport( base ) {
@@ -899,9 +982,14 @@
 				const minRaw = parseFloat( minVwInput.value );
 				const maxRaw = parseFloat( maxVwInput.value );
 
+				const minRem = toRem( minRaw, unit, base );
+				const maxRem = toRem( maxRaw, unit, base );
+
 				return {
-					minRem: toRem( minRaw, unit, base ),
-					maxRem: toRem( maxRaw, unit, base ),
+					minRem: minRem,
+					maxRem: maxRem,
+					minPx: minRem * base,
+					maxPx: maxRem * base,
 					minRaw: minRaw,
 					maxRaw: maxRaw,
 					unit: unit
@@ -1027,6 +1115,69 @@
 
 			}
 
+			// Recompute the line-height panel (unitless / px / %)
+
+			function recomputeLineHeight( panel, base, vw ) {
+
+				const unit = panel.querySelector( '.lh-unit' ).dataset.value;
+				const minVal = parseFloat( panel.querySelector( '.f-min' ).value );
+				const maxVal = parseFloat( panel.querySelector( '.f-max' ).value );
+
+				const outValue = panel.querySelector( '.out-value' );
+				const outProp = panel.querySelector( '.out-prop' );
+				const hint = panel.querySelector( '.hint' );
+
+				const maxField = panel.querySelector( '.lh-max-field' );
+				const minLabel = panel.querySelector( '.lh-min-label' );
+
+				// Unitless line-height cannot be made viewport-fluid: vw is a length
+				// and can't be added to a plain number. Output a static value.
+				if ( unit === 'unitless' ) {
+
+					maxField.classList.add( 'is-hidden' );
+					minLabel.textContent = 'Wert';
+
+					if ( isNaN( minVal ) ) {
+						outValue.value = '';
+						outProp.value = '';
+						hint.innerHTML = '';
+						return;
+					}
+
+					const value = round( minVal );
+
+					outValue.value = `${ value }`;
+					outProp.value = `line-height: ${ value };`;
+
+					hint.innerHTML = `Einheitslose <b>line-height</b> lässt sich nicht per Viewport fluid machen (<b>vw</b> ist eine Länge, nicht zu einer Zahl addierbar). Sie skaliert ohnehin mit der font-size – für fluide Zeilenhöhe <b>px</b> oder <b>%</b> wählen.`;
+
+					applyPreview( panel, `${ value }` );
+
+					return;
+
+				}
+
+				maxField.classList.remove( 'is-hidden' );
+				minLabel.textContent = 'Min. Wert';
+
+				if ( isNaN( minVal ) || isNaN( maxVal ) || isNaN( vw.minPx ) || isNaN( vw.maxPx ) ) {
+					outValue.value = '';
+					outProp.value = '';
+					hint.innerHTML = '';
+					return;
+				}
+
+				const clamp = buildClampNative( minVal, maxVal, unit, vw.minPx, vw.maxPx );
+
+				outValue.value = clamp;
+				outProp.value = `line-height: ${ clamp };`;
+
+				hint.innerHTML = `Skaliert von <b>${ minVal }${ unit }</b> bei <b>${ vw.minRaw }${ vw.unit }</b> bis <b>${ maxVal }${ unit }</b> bei <b>${ vw.maxRaw }${ vw.unit }</b>.`;
+
+				applyPreview( panel, clamp );
+
+			}
+
 			// Recompute every panel
 
 			function recomputeAll() {
@@ -1037,6 +1188,8 @@
 				panels.forEach( panel => {
 					if ( panel.dataset.type === 'spacing' ) {
 						recomputeSpacing( panel, base, vw );
+					} else if ( panel.dataset.type === 'lineHeight' ) {
+						recomputeLineHeight( panel, base, vw );
 					} else {
 						recomputeSingle( panel, base, vw );
 					}
