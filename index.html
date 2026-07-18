@@ -1240,9 +1240,11 @@
 
 			});
 
-			// Segmented toggles
+			// Segmented toggles (line-height unit handled separately below)
 
 			document.querySelectorAll( '.toggle' ).forEach( toggle => {
+
+				if ( toggle.classList.contains( 'lh-unit' ) ) return;
 
 				toggle.querySelectorAll( 'button' ).forEach( btn => {
 
@@ -1255,6 +1257,48 @@
 						recomputeAll();
 
 					});
+
+				});
+
+			});
+
+			// Line-height unit toggle: each unit keeps its own independent values
+
+			const lhPanel = document.querySelector( '.panel[data-type="lineHeight"]' );
+			const lhUnitToggle = lhPanel.querySelector( '.lh-unit' );
+			const lhMin = lhPanel.querySelector( '.f-min' );
+			const lhMax = lhPanel.querySelector( '.f-max' );
+
+			const lhStore = {
+				'unitless': { min: '1.4', max: '1.6' },
+				'px': { min: '24', max: '32' },
+				'%': { min: '130', max: '150' }
+			};
+
+			let lhCurrentUnit = lhUnitToggle.dataset.value;
+
+			// Seed the inputs from the starting unit's defaults
+			lhMin.value = lhStore[ lhCurrentUnit ].min;
+			lhMax.value = lhStore[ lhCurrentUnit ].max;
+
+			lhUnitToggle.querySelectorAll( 'button' ).forEach( btn => {
+
+				btn.addEventListener( 'click', () => {
+
+					const newUnit = btn.dataset.value;
+					if ( newUnit === lhCurrentUnit ) return;
+
+					// Save the current unit's values, then load the new unit's
+					lhStore[ lhCurrentUnit ] = { min: lhMin.value, max: lhMax.value };
+					lhMin.value = lhStore[ newUnit ].min;
+					lhMax.value = lhStore[ newUnit ].max;
+					lhCurrentUnit = newUnit;
+
+					lhUnitToggle.querySelectorAll( 'button' ).forEach( b => b.classList.remove( 'is-active' ) );
+					btn.classList.add( 'is-active' );
+					lhUnitToggle.dataset.value = newUnit;
+
+					recomputeAll();
 
 				});
 
