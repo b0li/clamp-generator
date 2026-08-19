@@ -589,7 +589,11 @@
 							<label>Eigenschaft</label>
 							<select class="prop-select">
 								<option value="padding">padding</option>
+								<option value="padding-inline">padding-inline</option>
+								<option value="padding-block">padding-block</option>
 								<option value="margin">margin</option>
+								<option value="margin-inline">margin-inline</option>
+								<option value="margin-block">margin-block</option>
 							</select>
 						</div>
 						<div class="field">
@@ -1071,7 +1075,46 @@
 
 			}
 
-			// Recompute the spacing panel (padding/margin, 4 sides)
+			// Axis model for a spacing property: physical (4 sides) vs logical
+			// (2 sides). Returns the axis labels, the sub-property names for the
+			// individual output, and the label used in linked mode.
+
+			function spacingModel( prop ) {
+
+				if ( prop.endsWith( '-block' ) ) {
+					return {
+						linkedLabel: 'Block (Start & End)',
+						axes: [
+							{ label: 'Block-Start', sub: `${ prop }-start` },
+							{ label: 'Block-End', sub: `${ prop }-end` }
+						]
+					};
+				}
+
+				if ( prop.endsWith( '-inline' ) ) {
+					return {
+						linkedLabel: 'Inline (Start & End)',
+						axes: [
+							{ label: 'Inline-Start', sub: `${ prop }-start` },
+							{ label: 'Inline-End', sub: `${ prop }-end` }
+						]
+					};
+				}
+
+				// Physical shorthand: top right bottom left
+				return {
+					linkedLabel: 'Alle Seiten',
+					axes: [
+						{ label: 'Top', sub: `${ prop }-top` },
+						{ label: 'Right', sub: `${ prop }-right` },
+						{ label: 'Bottom', sub: `${ prop }-bottom` },
+						{ label: 'Left', sub: `${ prop }-left` }
+					]
+				};
+
+			}
+
+			// Recompute the spacing panel (physical or logical properties)
 
 			function recomputeSpacing( panel, base, vw ) {
 
@@ -1081,17 +1124,23 @@
 
 				panel.dataset.previewProp = prop;
 
-				const order = [ 'top', 'right', 'bottom', 'left' ];
-				const topSide = panel.querySelector( '.side[data-side="top"]' );
+				const model = spacingModel( prop );
+				const count = model.axes.length;
+				const sideEls = [ ...panel.querySelectorAll( '.side' ) ];
 
-				// Toggle visibility of non-top sides when linked
-				panel.querySelectorAll( '.side' ).forEach( side => {
-					if ( side.dataset.side === 'top' ) return;
-					side.classList.toggle( 'is-hidden', linked );
+				// Show only the axes this property uses (just the first in linked mode)
+				// and relabel the visible boxes accordingly
+				sideEls.forEach( ( el, i ) => {
+
+					const used = linked ? i === 0 : i < count;
+					el.classList.toggle( 'is-hidden', ! used );
+
+					if ( i < count ) {
+						el.querySelector( '.side__label' ).textContent =
+							( linked && i === 0 ) ? model.linkedLabel : model.axes[i].label;
+					}
+
 				});
-
-				// In linked mode the single visible box applies to all sides
-				topSide.querySelector( '.side__label' ).textContent = linked ? 'Alle Seiten' : 'Top';
 
 				const outValue = panel.querySelector( '.out-value' );
 				const outIndividual = panel.querySelector( '.out-individual' );
@@ -1100,15 +1149,17 @@
 				const clamps = [];
 				let valid = true;
 
-				order.forEach( name => {
+				const n = linked ? 1 : count;
 
-					const source = linked ? topSide : panel.querySelector( `.side[data-side="${ name }"]` );
+				for ( let i = 0; i < n; i++ ) {
+
+					const source = sideEls[i];
 					const minVal = parseFloat( source.querySelector( '.s-min' ).value );
 					const maxVal = parseFloat( source.querySelector( '.s-max' ).value );
 
 					if ( isNaN( minVal ) || isNaN( maxVal ) ) {
 						valid = false;
-						return;
+						break;
 					}
 
 					const minRem = toRem( minVal, unit, base );
@@ -1116,7 +1167,7 @@
 
 					clamps.push( buildClamp( minRem, maxRem, vw.minRem, vw.maxRem ) );
 
-				});
+				}
 
 				if ( ! valid || isNaN( vw.minRem ) || isNaN( vw.maxRem ) ) {
 					outValue.value = '';
@@ -1125,19 +1176,29 @@
 					return;
 				}
 
-				// Shorthand: top right bottom left
-				outValue.value = `${ prop }: ${ clamps.join( ' ' ) };`;
+				if ( linked ) {
 
-				// Individual properties
-				outIndividual.value = order
-					.map( ( name, i ) => `${ prop }-${ name }: ${ clamps[i] };` )
-					.join( '\n' );
+					// One value applies to every axis
+					const clamp = clamps[0];
+
+					outValue.value = `${ prop }: ${ clamp };`;
+					outIndividual.value = model.axes.map( a => `${ a.sub }: ${ clamp };` ).join( '\n' );
+
+					applyPreview( panel, clamp );
+
+				} else {
+
+					// Shorthand with one value per axis
+					outValue.value = `${ prop }: ${ clamps.join( ' ' ) };`;
+					outIndividual.value = model.axes.map( ( a, i ) => `${ a.sub }: ${ clamps[i] };` ).join( '\n' );
+
+					applyPreview( panel, clamps.join( ' ' ) );
+
+				}
 
 				hint.innerHTML = linked
-					? `Alle Seiten gleich. Skaliert zwischen <b>${ vw.minRaw }${ vw.unit }</b> und <b>${ vw.maxRaw }${ vw.unit }</b>.`
-					: `Pro Seite eigener clamp. Skaliert zwischen <b>${ vw.minRaw }${ vw.unit }</b> und <b>${ vw.maxRaw }${ vw.unit }</b>.`;
-
-				applyPreview( panel, clamps.join( ' ' ) );
+					? `Ein Wert für alle Achsen. Skaliert zwischen <b>${ vw.minRaw }${ vw.unit }</b> und <b>${ vw.maxRaw }${ vw.unit }</b>.`
+					: `Pro Achse eigener clamp. Skaliert zwischen <b>${ vw.minRaw }${ vw.unit }</b> und <b>${ vw.maxRaw }${ vw.unit }</b>.`;
 
 			}
 
