@@ -411,6 +411,19 @@
 			border: 1px solid var( --accent );
 		}
 
+		.preview-height {
+			background: var( --accent-dim );
+			border: 1px solid var( --accent );
+			border-radius: 6px;
+			color: var( --accent );
+			font-size: 0.85rem;
+			font-weight: 600;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow: hidden;
+		}
+
 		/* Use-case hints */
 
 		.usecases {
@@ -522,7 +535,8 @@
 			<button class="tab" data-tab="spacing">Spacing</button>
 			<button class="tab" data-tab="gap">Gap</button>
 			<button class="tab" data-tab="width">Breite</button>
-			<button class="tab" data-tab="size">Höhe &amp; Radius</button>
+			<button class="tab" data-tab="height">Höhe</button>
+			<button class="tab" data-tab="size">Radius</button>
 			<button class="tab" data-tab="lineHeight">Zeilenhöhe</button>
 		</div><!-- end /.tabs -->
 
@@ -785,9 +799,9 @@
 
 		</div><!-- end /.panel width -->
 
-		<!-- Panel: Height & Radius -->
+		<!-- Panel: Height -->
 
-		<div class="panel" data-tab="size" data-type="single" data-preview-prop="min-height">
+		<div class="panel" data-tab="height" data-type="single" data-preview-prop="min-height">
 
 			<div class="controls">
 				<div class="field-grid">
@@ -796,18 +810,19 @@
 						<label>Eigenschaft</label>
 						<select class="prop-select">
 							<option value="min-height">min-height</option>
-							<option value="border-radius">border-radius</option>
+							<option value="height">height</option>
+							<option value="max-height">max-height</option>
 						</select>
 					</div>
 
 					<div class="field">
 						<label>Min. Wert</label>
-						<input type="number" class="f-min" value="2" step="0.5">
+						<input type="number" class="f-min" value="12" step="1">
 					</div>
 
 					<div class="field">
 						<label>Max. Wert</label>
-						<input type="number" class="f-max" value="6" step="0.5">
+						<input type="number" class="f-max" value="24" step="1">
 					</div>
 
 					<div class="field">
@@ -815,6 +830,57 @@
 						<div class="toggle size-unit" data-value="rem">
 							<button data-value="px">PX</button>
 							<button class="is-active" data-value="rem">REM</button>
+						</div>
+					</div>
+
+				</div><!-- end /.field-grid -->
+
+				<div class="outputs">
+					<div class="output-row">
+						<input type="text" class="out-value" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+					<div class="output-row">
+						<input type="text" class="out-prop" readonly>
+						<button class="copy" aria-label="Kopieren">⧉</button>
+					</div>
+				</div><!-- end /.outputs -->
+
+				<p class="hint"></p>
+
+			</div><!-- end /.controls -->
+
+			<div class="preview-wrap">
+				<div class="preview-label">Live-Preview (Fenster skalieren)</div>
+				<div class="preview-box">
+					<div class="preview-height preview">Höhe</div>
+				</div>
+			</div>
+
+		</div><!-- end /.panel height -->
+
+		<!-- Panel: Radius -->
+
+		<div class="panel" data-tab="size" data-type="single" data-prop="border-radius" data-preview-prop="border-radius">
+
+			<div class="controls">
+				<div class="field-grid">
+
+					<div class="field">
+						<label>Min. Radius</label>
+						<input type="number" class="f-min" value="8" step="1">
+					</div>
+
+					<div class="field">
+						<label>Max. Radius</label>
+						<input type="number" class="f-max" value="24" step="1">
+					</div>
+
+					<div class="field">
+						<label>Einheit</label>
+						<div class="toggle size-unit" data-value="px">
+							<button class="is-active" data-value="px">PX</button>
+							<button data-value="rem">REM</button>
 						</div>
 					</div>
 
@@ -1032,6 +1098,16 @@
 				if ( ! preview ) return;
 
 				const cssProp = panel.dataset.previewProp;
+
+				// Clear a previously applied property when it changes (e.g. switching
+				// between min-height / height / max-height) so stale inline styles
+				// don't stack up on the preview element
+				const last = preview.dataset.lastProp;
+				if ( last && last !== cssProp ) {
+					preview.style.removeProperty( last );
+				}
+				preview.dataset.lastProp = cssProp;
+
 				preview.style.setProperty( cssProp, value );
 
 			}
